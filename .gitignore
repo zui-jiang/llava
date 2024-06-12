@@ -33,3 +33,6 @@ ckpts*
 
 # Demo
 serve_images/
+
+# API Keys
+keys/
