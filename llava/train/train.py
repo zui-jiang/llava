@@ -36,7 +36,7 @@ from llava.model import *
 from llava.mm_utils import tokenizer_image_token
 
 from PIL import Image
-
+from utils import check_llama, check_mistral
 
 local_rank = None
 
@@ -823,8 +823,16 @@ def train(attn_implementation=None):
                 cache_dir=training_args.cache_dir,
                 **bnb_model_from_pretrained_args
             )
-        else:
+        elif check_llama(model_args.model_name_or_path):
             model = LlavaLlamaForCausalLM.from_pretrained(
+                model_args.model_name_or_path,
+                cache_dir=training_args.cache_dir,
+                attn_implementation=attn_implementation,
+                torch_dtype=(torch.bfloat16 if training_args.bf16 else None),
+                **bnb_model_from_pretrained_args
+            )
+        elif check_mistral(model_args.model_name_or_path):
+            model = LlavaMistralForCausalLM.from_pretrained(
                 model_args.model_name_or_path,
                 cache_dir=training_args.cache_dir,
                 attn_implementation=attn_implementation,
@@ -906,7 +914,7 @@ def train(attn_implementation=None):
             conversation_lib.default_conversation = conversation_lib.conv_templates[model_args.version]
         else:
             conversation_lib.default_conversation = conversation_lib.conv_templates["vicuna_v1"]
-
+    print(conversation_lib.default_conversation)
     if model_args.vision_tower is not None:
         model.get_model().initialize_vision_modules(
             model_args=model_args,
