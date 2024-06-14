@@ -1,36 +1,37 @@
 #!/bin/bash
-
 EXP_ID=$(date +%F-%H-%M-$RANDOM)
 bash keys/wandb.sh
 export WANDB_RUN_GROUP=IF
 export WANDB_ENTITY=cipsup
 export WANDB_WATCH=gradients
 export WANDB_PROJECT=LLaVA-v1.5
-export WANDB_NAME=pretrain-llama2chat-${EXP_ID}
+export WANDB_NAME=if-llama2chat-${EXP_ID}
 export PYTHONPATH=/ciphome/liuyanjiang2021/LLaVA
 
-deepspeed --master_port 20222 llava/train/train_mem.py \
-    --deepspeed ./scripts/zero2.json \
+deepspeed  --master_port 22222  llava/train/train_mem.py \
+    --deepspeed ./scripts/zero3.json \
     --model_name_or_path /data5/liuyanjiang2021/hf_models/Llama-2-13b-chat-hf \
     --version llava_llama_2 \
-    --data_path /data5/liuyanjiang2021/hf_datasets/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
-    --image_folder /data5/liuyanjiang2021/hf_datasets/LLaVA-Pretrain/images \
+    --data_path /data5/liuyanjiang2021/hf_datasets/LLaVA-Instruct-150K/llava_v1_5_mix665k.json \
+    --image_folder /data5/liuyanjiang2021/hf_datasets \
     --vision_tower /data7/hf_models/openai/clip-vit-large-patch14-336 \
+    --pretrain_mm_mlp_adapter /data5/liuyanjiang2021/checkpoints/llama2-chat-13b-pretrain/mm_projector.bin \
     --mm_projector_type mlp2x_gelu \
-    --tune_mm_mlp_adapter True \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
+    --image_aspect_ratio pad \
+    --group_by_modality_length True \
     --bf16 True \
-    --output_dir /data5/liuyanjiang2021/checkpoints/llama2-chat-13b-pretrain \
+    --output_dir /data5/liuyanjiang2021/checkpoints/llava-llama2chat-13b \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 32 \
+    --per_device_train_batch_size 16 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 1 \
     --evaluation_strategy "no" \
     --save_strategy "epoch" \
     --save_total_limit 1 \
-    --learning_rate 1e-3 \
+    --learning_rate 2e-5 \
     --weight_decay 0. \
     --warmup_ratio 0.03 \
     --lr_scheduler_type "cosine" \

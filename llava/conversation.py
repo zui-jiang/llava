@@ -13,6 +13,7 @@ class SeparatorStyle(Enum):
     MPT = auto()
     PLAIN = auto()
     LLAMA_2 = auto()
+    LLAMA_3 = auto()
 
 
 @dataclasses.dataclass
@@ -70,6 +71,17 @@ class Conversation:
                     ret += role + message + self.sep
                 else:
                     ret += role
+        elif self.sep_style == SeparatorStyle.LLAMA_3:
+            wrap_sys = lambda msg: f"<|start_header_id|>system<|end_header_id|>\n\n{msg}<|eot_id|>" if len(msg) > 0 else msg
+            wrap_inst = lambda msg: f"[INST] {msg} [/INST]"
+            ret = wrap_sys(self.system)
+            for i, (role, message) in enumerate(messages):
+                if message:
+                    ret += f"<|start_header_id|>{role}<|end_header_id|>\n\n"
+                    ret += f"{message.strip()}<|eot_id|>"
+                else:
+                    ret += f"<|start_header_id|>{role}<|end_header_id|>\n\n"
+
         elif self.sep_style == SeparatorStyle.LLAMA_2:
             wrap_sys = lambda msg: f"<<SYS>>\n{msg}\n<</SYS>>\n\n" if len(msg) > 0 else msg
             wrap_inst = lambda msg: f"[INST] {msg} [/INST]"
@@ -277,6 +289,28 @@ conv_llava_llama_2 = Conversation(
     sep2="</s>",
 )
 
+conv_llava_llama_3 = Conversation(
+    system="You are a helpful language and vision assistant. "
+           "You are able to understand the visual content that the user provides, "
+           "and assist the user with a variety of tasks using natural language.",
+    roles=("user", "assistant"),
+    version="llama_v3",
+    messages=(),
+    offset=0,
+    sep_style=SeparatorStyle.LLAMA_3,
+    sep="",
+    sep2="</s>",
+) 
+
+# Conversation(
+#         name="llama-3",
+#         system_template="<|start_header_id|>system<|end_header_id|>\n\n{system_message}<|eot_id|>",
+#         roles=("user", "assistant"),
+#         sep_style=SeparatorStyle.LLAMA3,
+#         sep="",
+#         stop_str="<|eot_id|>",
+#         stop_token_ids=[128001, 128009],
+#     )
 conv_mpt = Conversation(
     system="""<|im_start|>system
 A conversation between a user and an LLM-based AI assistant. The assistant gives helpful and honest answers.""",
@@ -387,7 +421,7 @@ conv_templates = {
     "llava_v1": conv_llava_v1,
     "v1_mmtag": conv_llava_v1_mmtag,
     "llava_llama_2": conv_llava_llama_2,
-
+    "llava_llama_3": conv_llava_llama_3,
     "mpt": conv_mpt,
 }
 

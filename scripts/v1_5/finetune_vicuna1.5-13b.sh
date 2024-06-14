@@ -14,7 +14,7 @@ deepspeed  --master_port 22222 llava/train/train_mem.py \
     --version v1 \
     --data_path /data5/liuyanjiang2021/hf_datasets/LLaVA-Instruct-150K/llava_v1_5_mix665k.json \
     --image_folder /data5/liuyanjiang2021/hf_datasets \
-    --vision_tower openai/clip-vit-large-patch14-336 \
+    --vision_tower /data7/hf_models/openai/clip-vit-large-patch14-336 \
     --pretrain_mm_mlp_adapter /data5/liuyanjiang2021/checkpoints/vicuna-1.5-13b-pretrain/mm_projector.bin \
     --mm_projector_type mlp2x_gelu \
     --mm_vision_select_layer -2 \

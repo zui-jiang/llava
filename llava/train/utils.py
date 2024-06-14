@@ -12,3 +12,10 @@ def check_mistral(model_name_or_path):
         return True
     else:
         return False
+
+
+def check_llama3(model_name_or_path):
+    if "Llama-3" in model_name_or_path:
+        return True
+    else:
+        return False
