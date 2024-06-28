@@ -74,6 +74,7 @@ class LlavaMetaModel:
         self.config.mm_vision_select_layer = mm_vision_select_layer
         self.config.mm_vision_select_feature = mm_vision_select_feature
         self.config.mm_patch_merge_type = mm_patch_merge_type
+        self.config.dvae_path = getattr(model_args, 'dvae_path', None)
         if self.config.mm_projector_type == 'resampler':
             self.config.n_queries = getattr(model_args, 'n_queries', -1)
             self.config.hidden_size_perhead = getattr(model_args, 'hidden_size_perhead', -1)

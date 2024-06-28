@@ -150,6 +150,33 @@ class Resampler(nn.Module):
         return query.unsqueeze(1).repeat(1, N, 1)
 
 
+class dVAE(nn.Module):
+    def __init__(self, dvae_path, embed_dim):
+        super().__init__()
+        self.vae = nn.Parameter(torch.load(dvae_path)).requires_grad_(False)
+        # trunc_normal_(self.query, std=.02)
+
+        self.gate = nn.Linear(embed_dim, self.vae.shape[0], bias=False)
+        # norm_layer = partial(nn.LayerNorm, eps=1e-6)
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            trunc_normal_(m.weight, std=.02)
+            if isinstance(m, nn.Linear) and m.bias is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+            nn.init.constant_(m.bias, 0)
+            nn.init.constant_(m.weight, 1.0)
+
+    def forward(self, x, attn_mask=None):
+        x = self.gate(x)
+        x = nn.functional.softmax(x, dim=-1, dtype=torch.float32).to(x.dtype) 
+        x = torch.matmul(x, self.vae)    
+        return x
+
+
+
 
 class IdentityMap(nn.Module):
     def __init__(self):
@@ -185,21 +212,29 @@ def build_vision_projector(config, delay_load=False, **kwargs):
         return nn.Linear(config.mm_hidden_size, config.hidden_size)
 
     mlp_gelu_match = re.match(r'^mlp(\d+)x_gelu$', projector_type)
-    if mlp_gelu_match:
-        mlp_depth = int(mlp_gelu_match.group(1))
-        modules = [nn.Linear(config.mm_hidden_size, config.hidden_size)]
-        for _ in range(1, mlp_depth):
-            modules.append(nn.GELU())
-            modules.append(nn.Linear(config.hidden_size, config.hidden_size))
-        return nn.Sequential(*modules)
-
-    if projector_type == 'identity':
-        return IdentityMap()
-    if projector_type == 'resampler':
-        return Resampler(
+    if mlp_gelu_match or projector_type == 'resampler':
+        if config.dvae_path:
+            dvae = dVAE(config.dvae_path, config.hidden_size)
+        if mlp_gelu_match:
+            mlp_depth = int(mlp_gelu_match.group(1))
+            modules = [nn.Linear(config.mm_hidden_size, config.hidden_size)]
+            for _ in range(1, mlp_depth):
+                modules.append(nn.GELU())
+                modules.append(nn.Linear(config.hidden_size, config.hidden_size))
+            projector = nn.Sequential(*modules)
+        else:
+            projector =  Resampler(
             grid_size=int(math.sqrt(config.n_queries)),
             embed_dim=config.hidden_size,
             num_heads=config.hidden_size // config.hidden_size_perhead,
             kv_dim=config.mm_hidden_size,
         )
+        if config.dvae_path:
+            return nn.Sequential(projector, dvae)
+        else:
+            return projector
+
+    if projector_type == 'identity':
+        return IdentityMap()
+        
     raise ValueError(f'Unknown projector type: {projector_type}')

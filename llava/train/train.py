@@ -67,6 +67,7 @@ class ModelArguments:
     mm_vision_select_feature: Optional[str] = field(default="patch")
     n_queries: Optional[int] = field(default=256)
     hidden_size_perhead: Optional[int] = field(default=128)
+    dvae_path: Optional[str] = field(default=None)
 
 
 @dataclass
@@ -76,6 +77,7 @@ class DataArguments:
     is_multimodal: bool = False
     image_folder: Optional[str] = field(default=None)
     image_aspect_ratio: str = 'square'
+    
 
 
 @dataclass
@@ -1147,7 +1149,7 @@ def train(attn_implementation=None):
         model.config.image_aspect_ratio = data_args.image_aspect_ratio
         model.config.tokenizer_padding_side = tokenizer.padding_side
         model.config.tokenizer_model_max_length = tokenizer.model_max_length
-
+        model.config.dvae_path = model_args.dvae_path
         model.config.tune_mm_mlp_adapter = training_args.tune_mm_mlp_adapter = model_args.tune_mm_mlp_adapter
         if model_args.tune_mm_mlp_adapter or model_args.only_tune_mm_mlp_adapter:
             model.requires_grad_(False)
