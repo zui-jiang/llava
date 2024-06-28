@@ -19,3 +19,9 @@ def check_llama3(model_name_or_path):
         return True
     else:
         return False
+    
+def check_qwen2(model_name_or_path):
+    if "Qwen2" in model_name_or_path:
+        return True
+    else:
+        return False

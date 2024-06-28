@@ -14,6 +14,7 @@ class SeparatorStyle(Enum):
     PLAIN = auto()
     LLAMA_2 = auto()
     LLAMA_3 = auto()
+    QWEN_2 = auto()
 
 
 @dataclasses.dataclass
@@ -81,7 +82,15 @@ class Conversation:
                     ret += f"{message.strip()}<|eot_id|>"
                 else:
                     ret += f"<|start_header_id|>{role}<|end_header_id|>\n\n"
-
+        elif self.sep_style == SeparatorStyle.QWEN_2:
+            ret = self.system + self.sep
+            for role, message in messages:
+                if message:
+                    if type(message) is tuple:
+                        message, _, _ = message
+                    ret += role + message + self.sep
+                else:
+                    ret += role
         elif self.sep_style == SeparatorStyle.LLAMA_2:
             wrap_sys = lambda msg: f"<<SYS>>\n{msg}\n<</SYS>>\n\n" if len(msg) > 0 else msg
             wrap_inst = lambda msg: f"[INST] {msg} [/INST]"
@@ -403,6 +412,18 @@ Answer the questions.""",
     sep="<|im_end|>",
 )
 
+conv_qwen_2 = Conversation(
+    system="""<|im_start|>system
+You are a helpful assistant.""",
+    roles=("<|im_start|>user\n", "<|im_start|>assistant\n"),
+    version="qwen_v2",
+    messages=(),
+    offset=0,
+    sep_style=SeparatorStyle.QWEN_2,
+    sep="<|im_end|>",
+)
+
+
 default_conversation = conv_vicuna_v1
 conv_templates = {
     "default": conv_vicuna_v0,
@@ -413,6 +434,8 @@ conv_templates = {
     "mistral_instruct": conv_mistral_instruct,
     "chatml_direct": conv_chatml_direct,
     "mistral_direct": conv_chatml_direct,
+    "qwen_2": conv_qwen_2,
+
 
     "plain": conv_llava_plain,
     "v0_plain": conv_llava_plain,

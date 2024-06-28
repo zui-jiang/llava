@@ -1,30 +1,32 @@
 #!/bin/bash
 
 EXP_ID=$(date +%F-%H-%M-$RANDOM)
-bash keys/wandb.sh
-export WANDB_RUN_GROUP=IF
+export PYTHONPATH=/ciphome/liuyanjiang2021/LLaVA
+export WANDB_API_KEY=67b71a7c534e920d3981223f849e95605d311b84
+export WANDB_RUN_GROUP=PRETRAIN
 export WANDB_ENTITY=cipsup
 export WANDB_WATCH=gradients
-export WANDB_PROJECT=LLaVA-v1.5
-export WANDB_NAME=pretrain-llama3chat-8b-${EXP_ID}
-export PYTHONPATH=/ciphome/liuyanjiang2021/LLaVA
+export WANDB_PROJECT=LLaVA-Qwen2-1.5B
+export WANDB_NAME=resampler-Pretrain-qwen2-1.5b${EXP_ID}
 
-deepspeed --master_port 20222 --include localhost:1,2,3,4,5,6,7 llava/train/train_mem.py \
+deepspeed llava/train/train_mem.py \
     --deepspeed ./scripts/zero2.json \
-    --model_name_or_path /data7/hf_models/NousResearch/Meta-Llama-3-8B-Instruct \
-    --version llava_llama_3 \
+    --model_name_or_path /data5/liuyanjiang2021/hf_models/Qwen2-1.5B-Instruct \
+    --version qwen_2 \
     --data_path /data5/liuyanjiang2021/hf_datasets/LLaVA-Pretrain/blip_laion_cc_sbu_558k.json \
     --image_folder /data5/liuyanjiang2021/hf_datasets/LLaVA-Pretrain/images \
     --vision_tower /data7/hf_models/openai/clip-vit-large-patch14-336 \
-    --mm_projector_type mlp2x_gelu \
+    --mm_projector_type resampler \
+    --n_queries 16 \
+    --hidden_size_perhead 128 \
     --tune_mm_mlp_adapter True \
     --mm_vision_select_layer -2 \
     --mm_use_im_start_end False \
     --mm_use_im_patch_token False \
     --bf16 True \
-    --output_dir /data5/liuyanjiang2021/checkpoints/llama3-chat-8b-pretrain \
+    --output_dir /data5/liuyanjiang2021/checkpoints/resampler-llava-qwen2instruct-1.5b-pretrain-16 \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 32 \
+    --per_device_train_batch_size 64 \
     --per_device_eval_batch_size 4 \
     --gradient_accumulation_steps 1 \
     --evaluation_strategy "no" \
@@ -38,6 +40,6 @@ deepspeed --master_port 20222 --include localhost:1,2,3,4,5,6,7 llava/train/trai
     --tf32 True \
     --model_max_length 2048 \
     --gradient_checkpointing True \
-    --dataloader_num_workers 4 \
+    --dataloader_num_workers 16 \
     --lazy_preprocess True \
     --report_to wandb
